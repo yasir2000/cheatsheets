@@ -531,3 +531,115 @@ for (let i of iterable) {
 
 For iterating through generators and arrays.
 See: [For..of iteration](https://babeljs.io/learn-es2015/#iterators--forof)
+
+### Maps
+
+Maps is a much needed data structure in JavaScript. Prior to ES6, we created hash maps through objects:
+
+```js
+var map = new Object();
+map[key1] = 'value1';
+map[key2] = 'value2';
+```
+
+However, this does not protect us from accidentally overriding functions with specific property names:
+
+> getOwnProperty({ hasOwnProperty: 'Hah, overwritten'}, 'Pwned');
+> TypeError: Property 'hasOwnProperty' is not a function
+Actual Maps allow us to set, get and search for values (and much more).
+
+let map = new Map();
+> map.set('name', 'david');
+> map.get('name'); // david
+> map.has('name'); // true
+
+The most amazing part of Maps is that we are no longer limited to just using strings. We can now use any type as a key, and it will not be type-cast to a string.
+
+```js
+let map = new Map([
+    ['name', 'david'],
+    [true, 'false'],
+    [1, 'one'],
+    [{}, 'object'],
+    [function () {}, 'function']
+]);
+
+for (let key of map.keys()) {
+    console.log(typeof key);
+    // > string, boolean, number, object, function
+}
+```
+
+Note: Using non-primitive values such as functions or objects won't work when testing equality using methods such as map.get(). As such, stick to primitive values such as Strings, Booleans and Numbers.
+
+We can also iterate over maps using .entries():
+
+```js
+for (let [key, value] of map.entries()) {
+    console.log(key, value);
+}
+(back to table of contents)
+```
+
+### WeakMaps
+In order to store private data versions < ES6, we had various ways of doing this. One such method was using naming conventions:
+
+```js
+class Person {
+    constructor(age) {
+        this._age = age;
+    }
+
+    _incrementAge() {
+        this._age += 1;
+    }
+}
+```
+
+But naming conventions can cause confusion in a codebase and are not always going to be upheld. Instead, we can use WeakMaps to store our values:
+
+```js
+let _age = new WeakMap();
+class Person {
+    constructor(age) {
+        _age.set(this, age);
+    }
+
+    incrementAge() {
+        let age = _age.get(this) + 1;
+        _age.set(this, age);
+        if (age > 50) {
+            console.log('Midlife crisis');
+        }
+    }
+}
+```
+
+The cool thing about using WeakMaps to store our private data is that their keys do not give away the property names, which can be seen by using Reflect.ownKeys():
+
+> const person = new Person(50);
+> person.incrementAge(); // 'Midlife crisis'
+> Reflect.ownKeys(person); // []
+
+A more practical example of using WeakMaps is to store data which is associated to a DOM element without having to pollute the DOM itself:
+
+```js
+let map = new WeakMap();
+let el  = document.getElementById('someElement');
+
+// Store a weak reference to the element with a key
+map.set(el, 'reference');
+
+// Access the value of the element
+let value = map.get(el); // 'reference'
+
+// Remove the reference
+el.parentNode.removeChild(el);
+el = null;
+
+// map is empty, since the element is destroyed
+```
+
+As shown above, once the object is destroyed by the garbage collector, the WeakMap will automatically remove the key-value pair which was identified by that object.
+
+Note: To further illustrate the usefulness of this example, consider how jQuery stores a cache of objects corresponding to DOM elements which have references. Using WeakMaps, jQuery can automatically free up any memory that was associated with a particular DOM element once it has been removed from the document. In general, WeakMaps are very useful for any library that wraps DOM elements.
